@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: mf_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: mf_estoque
+      POSTGRES_USER: mf_user
+      POSTGRES_PASSWORD: mf_senha_123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

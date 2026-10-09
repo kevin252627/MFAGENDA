@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model InventoryItem {
+  id         Int      @id @default(autoincrement())
+  unidade    String   @db.VarChar(20)
+  ordem      Int
+  codigo     String   @db.VarChar(50)
+  item       String
+  prateleira String   @default("") @db.VarChar(150)
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+
+  @@unique([unidade, ordem])
+  @@index([unidade, codigo])
+  @@map("estoque_itens")
+}
+
+model StockCount {
+  id             Int      @id @default(autoincrement())
+  unidade        String   @db.VarChar(20)
+  ordem          Int
+  codigo         String   @db.VarChar(50)
+  item           String
+  sistema        Int      @default(0)
+  contagemFisica Int?     @map("contagem_fisica")
+  dataContagem   DateTime? @map("data_contagem") @db.Timestamptz(6)
+  criadoEm       DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm   DateTime @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+
+  @@unique([unidade, ordem])
+  @@index([unidade, codigo])
+  @@map("contagem_estoque_prisma")
+}
+
+model StockCountSession {
+  id           String    @id @default(uuid()) @db.Uuid
+  unidade      String    @db.VarChar(20)
+  iniciadoEm   DateTime  @default(now()) @map("iniciado_em") @db.Timestamptz(6)
+  finalizadoEm DateTime? @map("finalizado_em") @db.Timestamptz(6)
+  arquivo      String?   @db.VarChar(255)
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+
+  @@index([unidade, iniciadoEm])
+  @@map("contagem_sessoes")
+}
+
+model PurchaseRequest {
+  id           String   @id @db.Uuid
+  codigo       String   @default("") @db.VarChar(50)
+  item         String
+  quantidade   Int
+  unidade      String   @db.VarChar(20)
+  solicitante  String   @default("") @db.VarChar(150)
+  justificativa String  @default("")
+  status       String   @default("Pendente") @db.VarChar(30)
+  usuarioId    String?  @map("usuario_id") @db.Uuid
+  usuario      AppUser? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+
+  @@index([status, criadoEm])
+  @@index([unidade, criadoEm])
+  @@map("solicitacoes_compra")
+}
+
+model AppUser {
+  id           String            @id @default(uuid()) @db.Uuid
+  accountKey   String?           @unique @map("account_key") @db.VarChar(20)
+  username     String            @unique @db.VarChar(80)
+  nome         String            @db.VarChar(150)
+  passwordHash String            @map("password_hash")
+  role         String            @db.VarChar(20)
+  criadoEm     DateTime          @default(now()) @map("criado_em") @db.Timestamptz(6)
+  solicitacoes PurchaseRequest[]
+
+  @@map("usuarios_app")
+}

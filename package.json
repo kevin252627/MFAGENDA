@@ -1,0 +1,27 @@
+{
+    "name": "mf-estoque-prisma",
+    "version": "1.0.0",
+    "private": true,
+    "description": "AplicaÃ§Ã£o de alocaÃ§Ã£o e contagem de estoque com PostgreSQL e Prisma",
+    "scripts": {
+        "start": "node server.cjs",
+        "db:push": "prisma db push",
+        "db:seed": "node seed.cjs",
+        "db:setup": "prisma db push && node seed.cjs",
+        "prisma:generate": "prisma generate"
+    },
+    "dependencies": {
+        "@prisma/client": "^6.16.2",
+        "dotenv": "^16.6.1",
+        "effect": "^4.0.2",
+        "express": "^5.1.0"
+    },
+    "devDependencies": {
+        "prisma": "^6.16.2"
+    },
+    "allowScripts": {
+        "@prisma/client@6.19.3": true,
+        "@prisma/engines@6.19.3": true,
+        "prisma@6.19.3": true
+    }
+}
