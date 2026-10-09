@@ -10,7 +10,7 @@ const { createCountWorkbook } = require('./spreadsheet-export.cjs');
 const prisma = new PrismaClient();
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const htmlFile = 'MF_Alocacao_Estoque_MF_DESIGN_CONTAGEM_FISICA_APENAS (1).html';
+const htmlFile = path.join('dist', 'index.html');
 const validUnits = new Set(['matriz', 'filial']);
 const normalizedAccountName = user => String(user?.nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 const isKevinAccount = user => user?.role === 'admin' && (user?.accountKey === 'kevin' || String(user.username || '').toLowerCase() === 'kevin01' || normalizedAccountName(user).startsWith('kevin'));
@@ -455,13 +455,14 @@ app.delete('/api/purchase-requests/:id', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+app.use(express.static(path.join(__dirname, 'dist')));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, htmlFile)));
 app.use((req, res, next) => {
-  if (req.method === 'GET' && decodeURIComponent(req.path) === `/${htmlFile}`) return res.sendFile(path.join(__dirname, htmlFile));
+  if (req.method === 'GET' && decodeURIComponent(req.path) === '/dist/index.html') return res.sendFile(path.join(__dirname, htmlFile));
   next();
 });
 for (const asset of ['manifest.webmanifest', 'app-icon.svg', 'app-icon-192.png', 'app-icon-512.png', 'pwa-install.js', 'sw.js', 'api-client.js', 'auth-client.js']) {
-  app.get(`/${asset}`, (_req, res) => res.sendFile(path.join(__dirname, asset)));
+  app.get(`/${asset}`, (_req, res) => res.sendFile(path.join(__dirname, 'dist', asset)));
 }
 app.use((error, _req, res, _next) => {
   console.error(error);
