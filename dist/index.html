@@ -251,6 +251,7 @@ body[data-theme="light"] .login-card p{color:#526b89}
 @media(max-width:900px){.account-setting{grid-template-columns:1fr 1fr}.account-setting .account-label{grid-column:1/-1}.account-setting button{grid-column:1/-1}}
 
 .workspace-tab-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:980px;margin:25px auto}.workspace-info-card{background:var(--panel,#fff);border:1px solid var(--border,#dbe5ee);border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,35,70,.08)}.workspace-info-card h3{margin:10px 0 8px}.workspace-info-card p{color:#5e7186;line-height:1.55}.workspace-list{display:grid;gap:0;margin-top:16px}.workspace-list div{padding:14px 0;border-bottom:1px solid #e6edf3}.workspace-list div:last-child{border-bottom:0}.workspace-list b,.workspace-list span{display:block}.workspace-list b{font-size:12px;color:#0877ff;margin-bottom:4px}.workspace-list span{font-size:14px}@media(max-width:700px){.workspace-tab-grid{grid-template-columns:1fr;margin:18px 10px}}
+.fazenda-workspace{display:grid;grid-template-columns:1fr 1.25fr .85fr;gap:16px;margin:25px auto;max-width:1250px}.workspace-input{width:100%;padding:12px;border:1px solid #cbd8e4;border-radius:9px;margin:12px 0;outline-color:#0877ff}.client-picker,.product-picker{max-height:420px;overflow:auto}.client-option,.product-option{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 8px;border-bottom:1px solid #e6edf3;cursor:pointer}.client-option:hover,.product-option:hover{background:#eef6ff}.client-option small,.product-option small{display:block;color:#6b7c90;margin-top:3px}.product-option input{width:62px;padding:7px;border:1px solid #cbd8e4;border-radius:7px}.selected-client{color:#0877ff!important;font-weight:700}.count-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.count-actions button{font-size:12px;padding:10px 13px}.farm-count-row{padding:12px 0;border-bottom:1px solid #e6edf3}.farm-count-row b,.farm-count-row span{display:block}.farm-count-row span{font-size:11px;color:#6b7c90;margin-top:3px}@media(max-width:950px){.fazenda-workspace{grid-template-columns:1fr 1fr}.fazenda-workspace>.workspace-info-card:last-child{grid-column:1/-1}}@media(max-width:700px){.fazenda-workspace{grid-template-columns:1fr;margin:18px 10px}}
 </style>
 <meta name="mf-pwa" content="installed">
 <meta name="theme-color" content="#020b1c">
@@ -301,10 +302,8 @@ body[data-theme="light"] .login-card p{color:#526b89}
 
 <section id="workspaceTabView" class="app-view">
   <div class="view-head"><div><p class="eyebrow">MF ALOCAÇÃO</p><h2 id="workspaceTabTitle">Agenda</h2></div><button class="secondary back-menu" onclick="goMenu()">← Voltar ao menu</button></div>
-  <div class="workspace-tab-grid">
-    <div class="workspace-info-card"><div class="menu-icon" id="workspaceTabIcon">◷</div><h3 id="workspaceTabHeading">Agenda da operação</h3><p id="workspaceTabDescription">Acompanhe compromissos, visitas técnicas e tarefas programadas.</p><button class="primary" onclick="showToast('Módulo pronto para cadastrar novos registros.')">＋ Novo registro</button></div>
-    <div class="workspace-info-card"><h3>Próximas atividades</h3><div class="workspace-list"><div><b>Hoje · 08:00</b><span>Conferência de estoque</span></div><div><b>Hoje · 14:00</b><span>Visita à fazenda</span></div><div><b>Amanhã · 09:30</b><span>Revisão de alocações</span></div></div></div>
-  </div>
+  <div id="agendaWorkspace" class="workspace-tab-grid"><div class="workspace-info-card"><div class="menu-icon">◷</div><h3>Agenda da operação</h3><p>Acompanhe compromissos, visitas técnicas e tarefas programadas.</p><button class="primary" onclick="showToast('Módulo pronto para cadastrar novos registros.')">＋ Novo registro</button></div><div class="workspace-info-card"><h3>Próximas atividades</h3><div class="workspace-list"><div><b>Hoje · 08:00</b><span>Conferência de estoque</span></div><div><b>Hoje · 14:00</b><span>Visita à fazenda</span></div><div><b>Amanhã · 09:30</b><span>Revisão de alocações</span></div></div></div></div>
+  <div id="fazendaWorkspace" class="fazenda-workspace" hidden><div class="workspace-info-card"><h3>1. Selecione o cliente</h3><input id="clientSearch" class="workspace-input" placeholder="Buscar cliente por nome ou município..." oninput="renderFarmClients(this.value)"><div id="farmClients" class="client-picker"></div></div><div id="farmProductsCard" class="workspace-info-card" hidden><h3>2. Selecione os produtos</h3><p id="selectedClientLabel" class="selected-client"></p><input id="productSearch" class="workspace-input" placeholder="Buscar produto..." oninput="renderFarmProducts(this.value)"><div id="farmProducts" class="product-picker"></div><div class="count-actions"><button class="primary" onclick="saveFarmCount()">Salvar contagem</button><button class="secondary" onclick="exportFarmCounts()">Exportar Excel</button></div></div><div class="workspace-info-card"><h3>Contagens salvas</h3><div id="savedFarmCounts" class="workspace-list"></div></div></div>
 </section>
 
 <section id="settingsView" class="app-view">
@@ -710,15 +709,22 @@ function setPurchaseMode(mode){
 
 let countLocation = localStorage.getItem("mf_count_location") || "matriz";
 
+let selectedFarmClient=null;let farmSelection={};
+function renderFarmClients(query=''){const q=query.toLowerCase();const el=document.getElementById('farmClients');el.innerHTML=(window.farmClients||[]).filter(c=>`${c.nome} ${c.municipio}`.toLowerCase().includes(q)).slice(0,120).map((c,i)=>`<div class="client-option" onclick="selectFarmClient(${i},'${encodeURIComponent(c.nome)}')"><div><b>${c.nome}</b><small>${c.municipio||''} · ${c.estado||''}</small></div><span>›</span></div>`).join('')||'<p>Nenhum cliente encontrado.</p>'}
+function selectFarmClient(i,name){selectedFarmClient=(window.farmClients||[]).find(c=>c.nome===decodeURIComponent(name));document.getElementById('farmProductsCard').hidden=false;document.getElementById('selectedClientLabel').textContent=`Cliente: ${selectedFarmClient.nome}`;renderFarmProducts();}
+function renderFarmProducts(query=''){const q=query.toLowerCase();document.getElementById('farmProducts').innerHTML=(window.farmProducts||[]).filter(p=>`${p.codigo} ${p.descricao}`.toLowerCase().includes(q)).map(p=>`<label class="product-option"><div><b>${p.descricao}</b><small>Código ${p.codigo}</small></div><input type="number" min="0" placeholder="Qtd" data-code="${p.codigo}" data-name="${p.descricao}" value="${farmSelection[p.codigo]||''}" oninput="farmSelection['${p.codigo}']=this.value"></label>`).join('')}
+function saveFarmCount(){if(!selectedFarmClient){showToast('Selecione um cliente primeiro.');return}const itens=Object.entries(farmSelection).filter(([,q])=>Number(q)>0).map(([codigo,quantidade])=>({codigo,quantidade:Number(quantidade),descricao:(window.farmProducts.find(p=>p.codigo===codigo)||{}).descricao}));if(!itens.length){showToast('Informe a quantidade de pelo menos um produto.');return}const rows=JSON.parse(localStorage.getItem('mf_farm_counts')||'[]');rows.unshift({id:Date.now(),cliente:selectedFarmClient.nome,municipio:selectedFarmClient.municipio,data:new Date().toLocaleString('pt-BR'),itens});localStorage.setItem('mf_farm_counts',JSON.stringify(rows));farmSelection={};renderFarmProducts();renderSavedFarmCounts();showToast('Contagem salva com sucesso.');}
+function renderSavedFarmCounts(){const rows=JSON.parse(localStorage.getItem('mf_farm_counts')||'[]');document.getElementById('savedFarmCounts').innerHTML=rows.slice(0,12).map(r=>`<div class="farm-count-row"><b>${r.cliente}</b><span>${r.data} · ${r.itens.length} produto(s)</span></div>`).join('')||'<p>Nenhuma contagem salva.</p>'}
+function exportFarmCounts(){const rows=JSON.parse(localStorage.getItem('mf_farm_counts')||'[]');if(!rows.length){showToast('Salve uma contagem antes de exportar.');return}const csv=['Cliente;Município;Data;Código;Produto;Quantidade'];rows.forEach(r=>r.itens.forEach(i=>csv.push([r.cliente,r.municipio,r.data,i.codigo,i.descricao,i.quantidade].map(v=>`"${String(v||'').replaceAll('"','""')}"`).join(';'))));const blob=new Blob(['\ufeff'+csv.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`contagem-fazendas-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(a.href);}
+
 function openWorkspaceTab(tab){
   document.getElementById("menuScreen").style.display="none";
   ["allocationView","countView","purchaseView","settingsView"].forEach(id=>document.getElementById(id).classList.remove("show"));
   document.getElementById("workspaceTabView").classList.add("show");
+  document.getElementById("agendaWorkspace").hidden=tab!=="agenda";document.getElementById("fazendaWorkspace").hidden=tab!=="fazenda";
   const agenda=tab==="agenda";
-  document.getElementById("workspaceTabTitle").textContent=agenda?"Agenda":"Fazenda";
-  document.getElementById("workspaceTabHeading").textContent=agenda?"Agenda da operação":"Painel da fazenda";
-  document.getElementById("workspaceTabDescription").textContent=agenda?"Acompanhe compromissos, visitas técnicas e tarefas programadas.":"Centralize informações das propriedades, equipes, visitas e atividades rurais.";
-  document.getElementById("workspaceTabIcon").textContent=agenda?"◷":"⌂";
+  document.getElementById("workspaceTabTitle").textContent=agenda?"Agenda":"Contagem Fazendas";
+  if(!agenda){renderFarmClients();renderSavedFarmCounts()}
 }
 
 function openModule(module){
@@ -1236,6 +1242,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').then(registration => registration.update()).catch(() => {}));
 }
 </script>
+<script src="./data/farm-data.js"></script>
 <script src="./auth-client.js"></script>
 <script src="./api-client.js"></script>
 <script src="./pwa-install.js"></script>
