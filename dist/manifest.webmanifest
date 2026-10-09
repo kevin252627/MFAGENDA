@@ -1,0 +1,17 @@
+{
+  "id": "./MF_Alocacao_Estoque_MF_DESIGN_CONTAGEM_FISICA_APENAS%20(1).html",
+  "name": "MF Alocação de Estoque",
+  "short_name": "MF Estoque",
+  "description": "Controle de alocação e contagem de estoque da matriz e filial.",
+  "lang": "pt-BR",
+  "start_url": "./MF_Alocacao_Estoque_MF_DESIGN_CONTAGEM_FISICA_APENAS%20(1).html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020b1c",
+  "theme_color": "#020b1c",
+  "icons": [
+    { "src": "./app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
