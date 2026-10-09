@@ -250,6 +250,7 @@ body[data-theme="light"] .login-card p{color:#526b89}
 .account-setting label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}.account-setting input{width:100%}
 @media(max-width:900px){.account-setting{grid-template-columns:1fr 1fr}.account-setting .account-label{grid-column:1/-1}.account-setting button{grid-column:1/-1}}
 
+.workspace-tab-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:980px;margin:25px auto}.workspace-info-card{background:var(--panel,#fff);border:1px solid var(--border,#dbe5ee);border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,35,70,.08)}.workspace-info-card h3{margin:10px 0 8px}.workspace-info-card p{color:#5e7186;line-height:1.55}.workspace-list{display:grid;gap:0;margin-top:16px}.workspace-list div{padding:14px 0;border-bottom:1px solid #e6edf3}.workspace-list div:last-child{border-bottom:0}.workspace-list b,.workspace-list span{display:block}.workspace-list b{font-size:12px;color:#0877ff;margin-bottom:4px}.workspace-list span{font-size:14px}@media(max-width:700px){.workspace-tab-grid{grid-template-columns:1fr;margin:18px 10px}}
 </style>
 <meta name="mf-pwa" content="installed">
 <meta name="theme-color" content="#020b1c">
@@ -292,6 +293,9 @@ body[data-theme="light"] .login-card p{color:#526b89}
     <h2>Menu de entrada</h2>
     <p>Selecione o módulo que deseja acessar.</p>
     <div class="menu-grid">
+      <button class="menu-btn" onclick="openWorkspaceTab('agenda')"><div class="menu-icon">◷</div><strong>Agenda</strong><span>Organize compromissos, visitas e atividades da fazenda</span></button>
+      <button class="menu-btn" onclick="openWorkspaceTab('fazenda')"><div class="menu-icon">⌂</div><strong>Fazenda</strong><span>Resumo das propriedades, equipes e operações</span></button>
+      <button class="menu-btn" onclick="openModule('contagem')"><div class="menu-icon">▤</div><strong>Contagem de estoque</strong><span>Faça a contagem física e acompanhe as diferenças</span></button>
       <button class="menu-btn" onclick="openModule('matriz')"><div class="menu-icon">▣</div><strong>Alocação matriz</strong><span>Controle de códigos, itens e prateleiras da matriz</span></button>
       <button class="menu-btn" onclick="openModule('filial')"><div class="menu-icon">▣</div><strong>Alocação filial</strong><span>Controle de códigos, itens e prateleiras da filial</span></button>
       <button id="countMatrizMenuButton" class="menu-btn" onclick="openModule('contagemMatriz')"><div class="menu-icon">▤</div><strong>Contagem de estoque matriz</strong><span>Contagem física atualizada com os itens da alocação matriz</span></button>
@@ -299,6 +303,14 @@ body[data-theme="light"] .login-card p{color:#526b89}
       <button class="menu-btn" onclick="openModule('compras')"><div class="menu-icon">🛒</div><strong>Solicitação de compra</strong><span>Cadastre e acompanhe pedidos de compra</span></button>
       <button id="appSettingsMenuButton" class="menu-btn" onclick="openModule('settings')" hidden><div class="menu-icon">⚙</div><strong>Configurações do app</strong><span>Personalize o tema e os acessos do aplicativo</span></button>
     </div>
+  </div>
+</section>
+
+<section id="workspaceTabView" class="app-view">
+  <div class="view-head"><div><p class="eyebrow">MF ALOCAÇÃO</p><h2 id="workspaceTabTitle">Agenda</h2></div><button class="secondary back-menu" onclick="goMenu()">← Voltar ao menu</button></div>
+  <div class="workspace-tab-grid">
+    <div class="workspace-info-card"><div class="menu-icon" id="workspaceTabIcon">◷</div><h3 id="workspaceTabHeading">Agenda da operação</h3><p id="workspaceTabDescription">Acompanhe compromissos, visitas técnicas e tarefas programadas.</p><button class="primary" onclick="showToast('Módulo pronto para cadastrar novos registros.')">＋ Novo registro</button></div>
+    <div class="workspace-info-card"><h3>Próximas atividades</h3><div class="workspace-list"><div><b>Hoje · 08:00</b><span>Conferência de estoque</span></div><div><b>Hoje · 14:00</b><span>Visita à fazenda</span></div><div><b>Amanhã · 09:30</b><span>Revisão de alocações</span></div></div></div>
   </div>
 </section>
 
@@ -705,12 +717,24 @@ function setPurchaseMode(mode){
 
 let countLocation = localStorage.getItem("mf_count_location") || "matriz";
 
+function openWorkspaceTab(tab){
+  document.getElementById("menuScreen").style.display="none";
+  ["allocationView","countView","purchaseView","settingsView"].forEach(id=>document.getElementById(id).classList.remove("show"));
+  document.getElementById("workspaceTabView").classList.add("show");
+  const agenda=tab==="agenda";
+  document.getElementById("workspaceTabTitle").textContent=agenda?"Agenda":"Fazenda";
+  document.getElementById("workspaceTabHeading").textContent=agenda?"Agenda da operação":"Painel da fazenda";
+  document.getElementById("workspaceTabDescription").textContent=agenda?"Acompanhe compromissos, visitas técnicas e tarefas programadas.":"Centralize informações das propriedades, equipes, visitas e atividades rurais.";
+  document.getElementById("workspaceTabIcon").textContent=agenda?"◷":"⌂";
+}
+
 function openModule(module){
   document.getElementById("menuScreen").style.display="none";
   document.getElementById("allocationView").classList.remove("show");
   document.getElementById("countView").classList.remove("show");
   document.getElementById("purchaseView").classList.remove("show");
   document.getElementById("settingsView").classList.remove("show");
+  document.getElementById("workspaceTabView").classList.remove("show");
   document.getElementById("headerExport").style.display = ["matriz","filial"].includes(module) ? "block" : "none";
   if(module==="contagem"||module==="contagemMatriz"||module==="contagemFilial"){
     document.getElementById("countView").classList.add("show");
@@ -738,6 +762,7 @@ function goMenu(){
   document.getElementById("countView").classList.remove("show");
   document.getElementById("purchaseView").classList.remove("show");
   document.getElementById("settingsView").classList.remove("show");
+  document.getElementById("workspaceTabView").classList.remove("show");
   document.getElementById("menuScreen").style.display="flex";
   document.getElementById("headerExport").style.display="block";
 }
