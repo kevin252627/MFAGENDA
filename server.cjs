@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const { promisify } = require('node:util');
 const { execFile } = require('node:child_process');
 const { PrismaClient } = require('@prisma/client');
-const { createCountWorkbook } = require('./spreadsheet-export.cjs');
+const { createCountWorkbook, createAgendaWorkbook } = require('./spreadsheet-export.cjs');
 const prisma = new PrismaClient();
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -167,6 +167,19 @@ app.post('/api/auth/logout', (_req, res) => {
 app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: req.user }));
 app.use('/api', requireAuth);
 app.use('/api', (req, res, next) => databaseReady ? next() : res.status(503).json({ error: 'Banco de dados inicializando. Tente novamente em instantes.' }));
+
+app.post('/api/agenda/export', async (req, res, next) => {
+  try {
+    if (!Array.isArray(req.body.rows) || !req.body.rows.length) return res.status(400).json({ error: 'A agenda não possui linhas para exportar.' });
+    const exportDir = process.env.AGENDA_EXPORT_DIR || path.join(require('node:os').homedir(), 'Desktop', 'MFAGENDA', 'AGENDA');
+    await fs.mkdir(exportDir, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const client = String(req.body.rows[0]?.cliente || 'agenda').replace(/[^a-z0-9À-ÿ]+/gi, '-').replace(/^-|-$/g, '').slice(0, 80) || 'agenda';
+    const filename = `Agenda_${client}_${stamp}.xlsx`;
+    await fs.writeFile(path.join(exportDir, filename), createAgendaWorkbook({ rows: req.body.rows }));
+    res.json({ ok: true, filename, directory: exportDir });
+  } catch (error) { next(error); }
+});
 
 const notificationRecipients = new Set(['kevin', 'rafael', 'mf01', 'mf02', 'mf03']);
 app.get('/api/notifications', async (req, res, next) => {

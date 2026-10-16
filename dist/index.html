@@ -1473,6 +1473,7 @@ document.addEventListener('click',event=>{
 </script>
 <script>
 // Campo de técnico: complementa o cadastro da agenda sem quebrar agendas antigas.
+async function saveAgendaExcel(rows){try{const response=await fetch('/api/agenda/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Não foi possível salvar o Excel.');showToast(`Excel da agenda salvo em MFAGENDA\\AGENDA: ${result.filename}`);return result}catch(error){console.error(error);showToast('Agenda salva, mas não foi possível gerar o Excel.');return null}}
 window.addEventListener('DOMContentLoaded', () => {
   const originalAgendaRows=window.agendaRows;
   if(originalAgendaRows){
@@ -1584,6 +1585,14 @@ window.addEventListener('DOMContentLoaded', () => {
     rows.forEach(row => { if (row.cliente === cliente && !row.tecnico) { row.tecnico = tecnico; changed = true; } });
     if (changed) { localStorage.setItem('mf_agenda_rows', JSON.stringify(rows)); renderAgenda(); }
   };
+});
+window.addEventListener('DOMContentLoaded', () => {
+  const originalSaveAgenda = window.saveAgenda;
+  if (originalSaveAgenda) window.saveAgenda = async function(){const result=originalSaveAgenda();return saveAgendaExcel(typeof agendaRows==='function'?agendaRows():[])};
+  const originalSaveAgendaClient = window.saveAgendaClient;
+  if (originalSaveAgendaClient) window.saveAgendaClient = async function(){const result=originalSaveAgendaClient();return saveAgendaExcel(typeof agendaRows==='function'?agendaRows():[])};
+  const originalSaveAgendaEdit = window.saveAgendaEdit;
+  if (originalSaveAgendaEdit) window.saveAgendaEdit = async function(event){const result=originalSaveAgendaEdit(event);return saveAgendaExcel(typeof agendaRows==='function'?agendaRows():[])};
 });
 </script>
 </body>
