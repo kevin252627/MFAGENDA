@@ -1474,6 +1474,7 @@ document.addEventListener('click',event=>{
 <script>
 // Campo de técnico: complementa o cadastro da agenda sem quebrar agendas antigas.
 async function saveAgendaExcel(rows){try{const response=await fetch('/api/agenda/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Não foi possível salvar o Excel.');showToast(`Excel da agenda salvo em MFAGENDA\\AGENDA: ${result.filename}`);return result}catch(error){console.error(error);showToast('Agenda salva, mas não foi possível gerar o Excel.');return null}}
+async function saveFarmCountExcel(rows){try{const response=await fetch('/api/farm-counts/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Não foi possível salvar o Excel.');showToast(`Excel da contagem salvo em MFAGENDA\\CONTAGEM FAZENDAS: ${result.filename}`);return result}catch(error){console.error(error);showToast('Contagem salva, mas não foi possível gerar o Excel.');return null}}
 window.addEventListener('DOMContentLoaded', () => {
   const originalAgendaRows=window.agendaRows;
   if(originalAgendaRows){
@@ -1593,6 +1594,8 @@ window.addEventListener('DOMContentLoaded', () => {
   if (originalSaveAgendaClient) window.saveAgendaClient = async function(){const result=originalSaveAgendaClient();return saveAgendaExcel(typeof agendaRows==='function'?agendaRows():[])};
   const originalSaveAgendaEdit = window.saveAgendaEdit;
   if (originalSaveAgendaEdit) window.saveAgendaEdit = async function(event){const result=originalSaveAgendaEdit(event);return saveAgendaExcel(typeof agendaRows==='function'?agendaRows():[])};
+  const originalSaveFarmCount = window.saveFarmCount;
+  if (originalSaveFarmCount) window.saveFarmCount = async function(){const result=originalSaveFarmCount();const rows=JSON.parse(localStorage.getItem('mf_farm_counts')||'[]');return saveFarmCountExcel(rows.length?[rows[0]]:[])};
 });
 </script>
 </body>

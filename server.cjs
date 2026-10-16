@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const { promisify } = require('node:util');
 const { execFile } = require('node:child_process');
 const { PrismaClient } = require('@prisma/client');
-const { createCountWorkbook, createAgendaWorkbook } = require('./spreadsheet-export.cjs');
+const { createCountWorkbook, createAgendaWorkbook, createFarmCountWorkbook } = require('./spreadsheet-export.cjs');
 const prisma = new PrismaClient();
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -177,6 +177,19 @@ app.post('/api/agenda/export', async (req, res, next) => {
     const client = String(req.body.rows[0]?.cliente || 'agenda').replace(/[^a-z0-9À-ÿ]+/gi, '-').replace(/^-|-$/g, '').slice(0, 80) || 'agenda';
     const filename = `Agenda_${client}_${stamp}.xlsx`;
     await fs.writeFile(path.join(exportDir, filename), createAgendaWorkbook({ rows: req.body.rows }));
+    res.json({ ok: true, filename, directory: exportDir });
+  } catch (error) { next(error); }
+});
+
+app.post('/api/farm-counts/export', async (req, res, next) => {
+  try {
+    if (!Array.isArray(req.body.rows) || !req.body.rows.length) return res.status(400).json({ error: 'A contagem não possui registros para exportar.' });
+    const exportDir = process.env.FARM_COUNTS_EXPORT_DIR || path.join(require('node:os').homedir(), 'Desktop', 'MFAGENDA', 'CONTAGEM FAZENDAS');
+    await fs.mkdir(exportDir, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const client = String(req.body.rows[0]?.cliente || 'contagem-fazendas').replace(/[^a-z0-9À-ÿ]+/gi, '-').replace(/^-|-$/g, '').slice(0, 80) || 'contagem-fazendas';
+    const filename = `Contagem_Fazendas_${client}_${stamp}.xlsx`;
+    await fs.writeFile(path.join(exportDir, filename), createFarmCountWorkbook({ rows: req.body.rows }));
     res.json({ ok: true, filename, directory: exportDir });
   } catch (error) { next(error); }
 });
