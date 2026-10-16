@@ -167,6 +167,31 @@ app.post('/api/auth/logout', (_req, res) => {
 app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: req.user }));
 app.use('/api', requireAuth);
 app.use('/api', (req, res, next) => databaseReady ? next() : res.status(503).json({ error: 'Banco de dados inicializando. Tente novamente em instantes.' }));
+
+const notificationRecipients = new Set(['kevin', 'rafael', 'mf01', 'mf02', 'mf03']);
+app.get('/api/notifications', async (req, res, next) => {
+  try {
+    const rows = await prisma.$queryRawUnsafe('SELECT id, recipient, title, detail, target, lida_em AS "readAt", criado_em AS "criadoEm" FROM notificacoes_app WHERE recipient = $1 ORDER BY criado_em DESC LIMIT 80', req.user.accountKey);
+    res.json(rows);
+  } catch (error) { next(error); }
+});
+app.post('/api/notifications', async (req, res, next) => {
+  try {
+    const recipients = [...new Set(Array.isArray(req.body.recipients) ? req.body.recipients : [])].filter(item => notificationRecipients.has(item) && item !== req.user.accountKey);
+    const title = String(req.body.title || '').trim().slice(0, 180);
+    const detail = String(req.body.detail || '').trim().slice(0, 1000);
+    const target = String(req.body.target || 'agenda').trim().slice(0, 40);
+    if (!title || !recipients.length) return res.status(400).json({ error: 'Notificação inválida.' });
+    for (const recipient of recipients) await prisma.$executeRawUnsafe('INSERT INTO notificacoes_app (id, recipient, title, detail, target, criado_em) VALUES ($1::uuid, $2, $3, $4, $5, NOW())', crypto.randomUUID(), recipient, title, detail, target);
+    res.json({ ok: true, total: recipients.length });
+  } catch (error) { next(error); }
+});
+app.patch('/api/notifications/:id/read', async (req, res, next) => {
+  try {
+    const updated = await prisma.$executeRawUnsafe('UPDATE notificacoes_app SET lida_em = NOW() WHERE id = $1::uuid AND recipient = $2 AND lida_em IS NULL', req.params.id, req.user.accountKey);
+    res.json({ ok: true, total: updated });
+  } catch (error) { next(error); }
+});
 const kevinSettingsOnly = (req, res, next) => isKevinAccount(req.user)
   ? next()
   : res.status(403).json({ error: 'Configurações restritas ao Kevin01.' });
@@ -398,6 +423,7 @@ app.post('/api/count-sessions/:id/finalize', async (req, res, next) => {
     const workbook = createCountWorkbook({ unit: session.unidade, startedAt: session.iniciadoEm, finishedAt, items });
     await fs.writeFile(path.join(__dirname, filename), workbook);
     const finalized = await prisma.stockCountSession.update({ where: { id: session.id }, data: { finalizadoEm: finishedAt, arquivo: filename } });
+    await prisma.$executeRawUnsafe('INSERT INTO notificacoes_app (id, recipient, title, detail, target, criado_em) VALUES ($1::uuid, $2, $3, $4, $5, NOW())', crypto.randomUUID(), 'kevin', 'Contagem realizada', `Contagem ${session.unidade} finalizada por ${req.user?.nome || 'usuário'}.`, 'contagem');
     res.json({ session: finalized, filename, downloadUrl: `/api/count-sessions/${session.id}/download` });
   } catch (error) { next(error); }
 });

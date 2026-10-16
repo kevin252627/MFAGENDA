@@ -1,4 +1,35 @@
 services:
+  app:
+    build:
+      context: .
+    container_name: mf_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://mf_user:mf_senha_123@postgres:5432/mf_estoque?schema=public
+      PORT: 3000
+      AUTH_SECRET: ${AUTH_SECRET:-troque-esta-chave-em-producao}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ADMIN1_USERNAME: ${ADMIN1_USERNAME:-admin1}
+      ADMIN1_NAME: ${ADMIN1_NAME:-Administrador 1}
+      ADMIN1_PASSWORD: ${ADMIN1_PASSWORD:?Defina ADMIN1_PASSWORD no .env}
+      ADMIN2_USERNAME: ${ADMIN2_USERNAME:-admin2}
+      ADMIN2_NAME: ${ADMIN2_NAME:-Administrador 2}
+      ADMIN2_PASSWORD: ${ADMIN2_PASSWORD:?Defina ADMIN2_PASSWORD no .env}
+      USER1_USERNAME: ${USER1_USERNAME:-usuario1}
+      USER1_NAME: ${USER1_NAME:-Usuario 1}
+      USER1_PASSWORD: ${USER1_PASSWORD:?Defina USER1_PASSWORD no .env}
+      USER2_USERNAME: ${USER2_USERNAME:-usuario2}
+      USER2_NAME: ${USER2_NAME:-Usuario 2}
+      USER2_PASSWORD: ${USER2_PASSWORD:?Defina USER2_PASSWORD no .env}
+      USER3_USERNAME: ${USER3_USERNAME:-usuario3}
+      USER3_NAME: ${USER3_NAME:-Usuario 3}
+      USER3_PASSWORD: ${USER3_PASSWORD:?Defina USER3_PASSWORD no .env}
+    ports:
+      - "4173:3000"
+
   postgres:
     image: postgres:16
     container_name: mf_postgres
@@ -11,6 +42,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mf_user -d mf_estoque"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
 volumes:
   postgres_data:

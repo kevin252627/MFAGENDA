@@ -30,6 +30,7 @@
     if (requester) { requester.value = user.nome; requester.readOnly = true; }
     document.body.dataset.role = user.role;
     window.dispatchEvent(new Event('mf:authenticated'));
+    window.setTimeout(() => window.loadNotifications?.(), 250);
   }
   window.refreshAuthenticatedUser = user => applyUser(user);
   function showLogin(message = '') {
@@ -71,7 +72,7 @@
   };
 
   async function restoreSession() {
-    if (window.location.protocol === 'file:' || ['localhost','127.0.0.1'].includes(window.location.hostname) || new URLSearchParams(window.location.search).has('sem-login')) {
+    if (window.location.protocol === 'file:' || new URLSearchParams(window.location.search).has('sem-login')) {
       applyUser({ username: 'kevin01', nome: 'Kevin', role: 'admin', accountKey: 'kevin' });
       return;
     }
